@@ -1,31 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>MQTT Counter</title>
+    <meta charset="UTF-8" />
+    <title>Workout Tracker</title>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
     <style>
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            padding: 40px;
+            background-color: #0f1115;
+            color: white;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
+
+        /* LEFT SIDE: CAMERA */
+        #cameraSection {
+            flex: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1d24;
+            position: relative;
+        }
+
+        video {
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            border: 4px solid #2b7de9;
+        }
+
+        /* RIGHT SIDE: SIDEBAR */
+        #sidebar {
+            flex: 1;
+            background: #13161d;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 10px rgba(0,0,0,0.4);
+        }
+
+        h2, h3 {
+            margin-top: 0;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .exercise-list div {
+            background: #1e222b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .exercise-list div:hover {
+            background: #2b7de9;
+        }
+
+        /* Counter Styling */
+        #counterBox {
+            background: #1e222b;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
         #counter {
-            font-size: 48px;
+            font-size: 60px;
             font-weight: bold;
             color: #2b7de9;
         }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #2b7de9;
+            color: white;
+        }
+
+        button:hover {
+            background: #1d5fc7;
+        }
+
+        /* Rest Timer */
+        #restTimerBox {
+            background: #1e222b;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 40px;
+            color: #2b7de9;
+        }
+
+        /* Metrics placeholder */
+        #chartBox {
+            height: 160px;
+            background: #1e222b;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
     </style>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
+
 <body>
 
-<h1>MQTT Message Counter</h1>
-<div id="counter">{{number}}</div>
+<!-- LEFT SIDE CAMERA -->
+<div id="cameraSection">
+    <video id="camera" autoplay playsinline></video>
+</div>
+
+<!-- RIGHT SIDE SIDEBAR -->
+<div id="sidebar">
+
+    <div class="section">
+        <h2>Workout: Push / Pull / Legs</h2>
+        <h3>Current Exercise: Bicep Curl</h3>
+        <p>Set 1 / 3 — Reps Goal: 12</p>
+    </div>
+
+    <div class="section exercise-list">
+        <h3>Exercises</h3>
+        <div>Push Ups (3×10)</div>
+        <div>Squats (3×12)</div>
+        <div>Rows (3×10)</div>
+        <div style="background:#2b7de9;">Bicep Curls (3×10)</div>
+    </div>
+
+    <!-- Live Counter -->
+    <div class="section">
+        <h3>Live Counter</h3>
+        <div id="counterBox">
+            <div id="counter">{{ number }}</div>
+            <button id="resetBtn">Reset Counter</button>
+        </div>
+    </div>
+
+    <!-- REST TIMER -->
+    <div class="section">
+        <h3>Rest Timer</h3>
+        <div id="restTimerBox">Not Started</div>
+        <button id="startRestBtn">Start 30s Rest</button>
+    </div>
+
+    <div class="section">
+        <h3>Metrics</h3>
+        <div id="chartBox"></div>
+    </div>
+
+</div>
 
 <script>
-// Connect to server-sent events
+/* SOCKET.IO CONNECTION */
 const socket = io();
+
+/* MQTT LIVE COUNTER UPDATES */
 socket.on("counter", value => {
     document.getElementById("counter").textContent = value;
 });
+
+
+/* -- MODIFIED: CLIENT-SIDE REST TIMER LOGIC WITH SOUND -- */
+
+// Keep track of the timer interval so we can stop it
+let restInterval = null;
+
+// --- ADDED: Sound Generation ---
+// Create an AudioContext. Note: Browsers may require a user interaction (like a click)
+// before allowing audio to play. Since our timer is started by a click, this is fine.
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound() {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sine'; // A simple, clean tone
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime); // Frequency in hertz (Hz)
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set volume
+
+    oscillator.start();
+    // Stop the sound after 0.5 seconds
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+
+// Listen for the event from the server to start the timer
+socket.on("start_rest_timer_client", data => {
+    const restTimerDisplay = document.getElementById("restTimerBox");
+    let remaining = data.duration;
+
+    // Clear any previously running timer before starting a new one
+    if (restInterval) {
+        clearInterval(restInterval);
+    }
+    
+    // Update the display immediately
+    restTimerDisplay.textContent = remaining + "s";
+
+    // Start a new interval that runs every second
+    restInterval = setInterval(() => {
+        remaining--;
+        restTimerDisplay.textContent = remaining + "s";
+
+        // When the timer is finished
+        if (remaining <= 0) {
+            clearInterval(restInterval); // Stop the interval
+            restTimerDisplay.textContent = "Rest Finished!";
+            playSound(); // --- ADDED: Play the sound ---
+        }
+    }, 1000); // 1000 milliseconds = 1 second
+});
+
+
+/* CAMERA STREAM */
+const video = document.getElementById("camera");
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+    } catch (err) {
+        alert("Camera access denied.");
+        console.error(err);
+    }
+}
+startCamera();
+
+/* BUTTONS */
+document.getElementById("resetBtn").onclick = async () => {
+    await fetch("/reset", { method: "POST" });
+    document.getElementById("counter").textContent = 0;
+};
+
 
 </script>
 

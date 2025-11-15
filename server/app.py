@@ -20,6 +20,12 @@ mqtt_client = mqtt.Client()
 mqtt_client.connect(BROKER_HOST, BROKER_PORT)
 mqtt_client.loop_start() 
 
+# -- REMOVED --: The server-side timer thread logic is no longer needed.
+# rest_timer_thread = None
+# rest_timer_running = False
+# def run_rest_timer(duration): ...
+
+
 def start_background_threads():
     # Create threads
     mqtt_worker = MQTTWorker()
@@ -67,6 +73,24 @@ def publish_message():
 def open_cv():
     data = request.json
     
+@app.route("/reset", methods=["POST"])
+def reset():
+    global counter
+    counter = 0
+    socketio.emit("counter", 0)
+    return {"status": "reset"}
+
+# -- MODIFIED --
+@app.route("/start_rest", methods=["POST"])
+def start_rest():
+    seconds = int(request.args.get("seconds", 60))
+
+    # Emit an event to the client, telling it to start its own timer
+    socketio.emit("start_rest_timer_client", {"duration": seconds})
+    
+    return jsonify({"status": "rest_timer_initialized", "duration": seconds})
+
+
 
 if __name__ == "__main__":
     start_background_threads()
