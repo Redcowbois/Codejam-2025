@@ -3,3 +3,6 @@ mediapipe
 numpy
 flask
 requests
+paho-mqtt
+flask-socketio
+eventlet
