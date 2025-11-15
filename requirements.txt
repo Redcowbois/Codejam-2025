@@ -2,5 +2,9 @@ opencv-python
 mediapipe 
 numpy
 flask
+requests
+paho-mqtt
+flask-socketio
+eventlet
 scikit-learn
 tensorflow

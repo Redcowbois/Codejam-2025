@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MQTT Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+        }
+        #counter {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2b7de9;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<h1>MQTT Message Counter</h1>
+<div id="counter">{{number}}</div>
+
+<script>
+// Connect to server-sent events
+const socket = io();
+socket.on("counter", value => {
+    document.getElementById("counter").textContent = value;
+});
+
+</script>
+
+</body>
+</html>
