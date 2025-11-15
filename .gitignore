@@ -2,3 +2,5 @@ test*
 har_lstm_model/
 Logs/
 trainingsets/
+venv
+__pycache__
