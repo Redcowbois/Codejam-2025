@@ -119,7 +119,7 @@
 
 <!-- LEFT SIDE CAMERA -->
 <div id="cameraSection">
-    <video id="camera" autoplay playsinline></video>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480">
 </div>
 
 <!-- RIGHT SIDE SIDEBAR -->
@@ -224,17 +224,17 @@ socket.on("start_rest_timer_client", data => {
 
 
 /* CAMERA STREAM */
-const video = document.getElementById("camera");
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-    } catch (err) {
-        alert("Camera access denied.");
-        console.error(err);
-    }
-}
-startCamera();
+// const video = document.getElementById("camera");
+// async function startCamera() {
+//     try {
+//         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+//         video.srcObject = stream;
+//     } catch (err) {
+//         alert("Camera access denied.");
+//         console.error(err);
+//     }
+// }
+// startCamera();
 
 
 </script>

@@ -7,7 +7,8 @@ import time
 
 
 # --- Configuration (Must Match Training Config) ---
-MODEL_PATH = os.path.join('har_lstm_model', 'model.keras')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(SCRIPT_DIR, '..', 'har_lstm_model', 'model.keras')
 SEQUENCE_LENGTH = 35
 
 # 1. Centralize Configuration and Label Mapping
@@ -168,7 +169,7 @@ def check_form(landmarks, exercise_name):
         return {'feedback': f"Error: Cannot measure form ({e})"}
 
 
-def run_predictor():
+def run_predictor(camera):
     """Loads model and runs real-time prediction loop."""
     
     # ... (Model loading and setup remain the same) ...
@@ -181,7 +182,7 @@ def run_predictor():
         print(f"Error loading model: {e}")
         return
 
-    cap = cv2.VideoCapture(0)
+    cap = camera
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return

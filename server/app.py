@@ -2,10 +2,11 @@ from flask import *
 from queue import Queue
 import threading
 from mqtt_handler import MQTTWorker
-from opencv import main as opencv_main
+from opencv_thread import main as opencv_thread_main
 import time
 from flask_socketio import SocketIO, emit
 import paho.mqtt.client as mqtt
+import cv2 # -- ADDED --: Needed for encoding the frame
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -20,21 +21,36 @@ mqtt_client = mqtt.Client()
 mqtt_client.connect(BROKER_HOST, BROKER_PORT)
 mqtt_client.loop_start() 
 
-# -- REMOVED --: The server-side timer thread logic is no longer needed.
-# rest_timer_thread = None
-# rest_timer_running = False
-# def run_rest_timer(duration): ...
-
+camera = cv2.VideoCapture(0)
 
 def start_background_threads():
     # Create threads
     mqtt_worker = MQTTWorker()
     t1 = threading.Thread(target=mqtt_worker.main, daemon=True)
-    t2 = threading.Thread(target=opencv_main, args=("Thread-2",), daemon=True)
+    # -- REMOVED --: The OpenCV process is now handled by the /video_feed route
+    t2 = threading.Thread(target=opencv_thread_main, args=(camera,), daemon=True)
 
     # Start them
     t1.start()
     t2.start()
+
+def generate_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            # Encode frame as JPEG
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            # Yield frame in byte format
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), 
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/")
 def index():
@@ -80,16 +96,11 @@ def reset():
     socketio.emit("counter", 0)
     return {"status": "reset"}
 
-# -- MODIFIED --
 @app.route("/start_rest", methods=["POST"])
 def start_rest():
     seconds = int(request.args.get("seconds", 60))
-
-    # Emit an event to the client, telling it to start its own timer
     socketio.emit("start_rest_timer_client", {"duration": seconds})
-    
     return jsonify({"status": "rest_timer_initialized", "duration": seconds})
-
 
 
 if __name__ == "__main__":
