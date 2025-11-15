@@ -24,12 +24,17 @@ class MQTTWorker:
 
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode()
-        payload_split = payload.split(",")
         # Call Flask server
+        print("Received MQTT msg: " + payload)
 
-        if payload_split[0] == "inc":
+        if payload == "inc":
             try:
                 requests.post("http://127.0.0.1:5000/mqtt-message", json={"msg": payload})
+            except Exception as e:
+                print("Failed to call Flask:", e)
+        elif payload == "stop":
+            try:
+                requests.post("http://127.0.0.1:5000/start_rest?seconds=10", json={"msg": payload})
             except Exception as e:
                 print("Failed to call Flask:", e)
         else:
