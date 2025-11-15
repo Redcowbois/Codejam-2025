@@ -14,7 +14,7 @@
             color: white;
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden; /* This is important to keep the main page from scrolling */
         }
 
         /* LEFT SIDE: CAMERA */
@@ -42,6 +42,7 @@
             display: flex;
             flex-direction: column;
             box-shadow: -4px 0 10px rgba(0,0,0,0.4);
+            overflow-y: auto; /* --- THIS IS THE ADDED LINE --- */
         }
 
         h2, h3 {
@@ -143,7 +144,6 @@
         <h3>Live Counter</h3>
         <div id="counterBox">
             <div id="counter">{{ number }}</div>
-            <button id="resetBtn">Reset Counter</button>
         </div>
     </div>
 
@@ -151,12 +151,16 @@
     <div class="section">
         <h3>Rest Timer</h3>
         <div id="restTimerBox">Not Started</div>
-        <button id="startRestBtn">Start 30s Rest</button>
     </div>
 
     <div class="section">
         <h3>Metrics</h3>
         <div id="chartBox"></div>
+        <!-- Adding more content to demonstrate scrolling -->
+        <p>Some extra content...</p>
+        <div id="chartBox" style="margin-top:20px; height: 200px"></div>
+        <p>More content to ensure the panel overflows and becomes scrollable.</p>
+        <div id="chartBox" style="margin-top:20px; height: 150px"></div>
     </div>
 
 </div>
@@ -177,8 +181,6 @@ socket.on("counter", value => {
 let restInterval = null;
 
 // --- ADDED: Sound Generation ---
-// Create an AudioContext. Note: Browsers may require a user interaction (like a click)
-// before allowing audio to play. Since our timer is started by a click, this is fine.
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound() {
@@ -188,12 +190,11 @@ function playSound() {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
-    oscillator.type = 'sine'; // A simple, clean tone
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime); // Frequency in hertz (Hz)
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set volume
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
 
     oscillator.start();
-    // Stop the sound after 0.5 seconds
     oscillator.stop(audioContext.currentTime + 0.5);
 }
 
@@ -203,26 +204,22 @@ socket.on("start_rest_timer_client", data => {
     const restTimerDisplay = document.getElementById("restTimerBox");
     let remaining = data.duration;
 
-    // Clear any previously running timer before starting a new one
     if (restInterval) {
         clearInterval(restInterval);
     }
     
-    // Update the display immediately
     restTimerDisplay.textContent = remaining + "s";
 
-    // Start a new interval that runs every second
     restInterval = setInterval(() => {
         remaining--;
         restTimerDisplay.textContent = remaining + "s";
 
-        // When the timer is finished
         if (remaining <= 0) {
-            clearInterval(restInterval); // Stop the interval
+            clearInterval(restInterval);
             restTimerDisplay.textContent = "Rest Finished!";
-            playSound(); // --- ADDED: Play the sound ---
+            playSound();
         }
-    }, 1000); // 1000 milliseconds = 1 second
+    }, 1000);
 });
 
 
@@ -238,12 +235,6 @@ async function startCamera() {
     }
 }
 startCamera();
-
-/* BUTTONS */
-document.getElementById("resetBtn").onclick = async () => {
-    await fetch("/reset", { method: "POST" });
-    document.getElementById("counter").textContent = 0;
-};
 
 
 </script>
