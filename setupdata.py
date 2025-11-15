@@ -95,6 +95,9 @@ def run_recorder():
         
         sequence = [] # Stores the 60 frames for the current sample
         recording = False
+        counting_down = False # New state for the timer
+        start_time = 0
+        countdown_duration = 3 # 3 seconds pre-roll
         sample_count = 0
         current_label = ""
         
@@ -122,52 +125,78 @@ def run_recorder():
             # Recolor back to BGR for OpenCV display
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-            # --- Extract and Process Features ---
-            if results.pose_landmarks:
-                landmarks_list = results.pose_landmarks.landmark
-                normalized_features = normalize_landmarks(landmarks_list)
-                
-                if recording:
-                    sequence.append(normalized_features)
-                    
-                    # Update status display
-                    cv2.putText(image, f"CAPTURING: {len(sequence)}/{SEQUENCE_LENGTH} frames", (10, 30), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
-
-                    # Check if sequence is complete
-                    if len(sequence) >= SEQUENCE_LENGTH:
-                        recording = False
-                        sample_count += 1
-                        print("\n--- Sequence Captured ---")
-                        
-                        # Save the sequence
-                        sequence_array = np.array(sequence).astype(np.float32)
-                        
-                        # Prompt user for label (e.g., 'bicep_curl_slow', 'bicep_curl_fast', 'idle')
-                        current_label = input(f"Enter label for sample {sample_count} (e.g., bicep_curl_1): ")
-                        
-                        file_name = f'{current_label}.npy'
-                        save_path = os.path.join(DATA_PATH, file_name)
-                        
-                        # Save the 60x18 array
-                        np.save(save_path, sequence_array)
-                        
-                        print(f"Successfully saved sequence to {save_path}")
-                        print("Press 'S' to record next sample.")
-                        
-                        # Reset sequence for the next capture
-                        sequence = []
-                else:
-                     cv2.putText(image, "Press 'S' to Start Recording", (10, 30), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
-
-            # --- Display MediaPipe Landmarks ---
+            
+            # --- Draw Landmarks (before status text) ---
             mp.solutions.drawing_utils.draw_landmarks(
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
                 mp.solutions.drawing_utils.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
                 mp.solutions.drawing_utils.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
             )
+
+            # --- Extract and Process Features ---
+            normalized_features = None
+            if results.pose_landmarks:
+                landmarks_list = results.pose_landmarks.landmark
+                normalized_features = normalize_landmarks(landmarks_list)
+            
+            # --- Handle Recording and Countdown States ---
+            if counting_down:
+                elapsed_time = time.time() - start_time
+                remaining_time = countdown_duration - int(elapsed_time)
+                
+                if remaining_time > 0:
+                    # Display countdown timer
+                    cv2.putText(image, f"GET READY: {remaining_time}", (200, 250), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 5, cv2.LINE_AA)
+                    cv2.putText(image, "Recording starts soon...", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2, cv2.LINE_AA) # Orange text
+                else:
+                    # Countdown finished, start recording
+                    counting_down = False
+                    recording = True
+                    sequence = [] # Ensure sequence is clear on start
+                    print("Recording started!")
+            
+            elif recording:
+                if normalized_features is not None:
+                    sequence.append(normalized_features)
+                    
+                # Update status display
+                cv2.putText(image, f"CAPTURING: {len(sequence)}/{SEQUENCE_LENGTH} frames", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
+
+                # Check if sequence is complete
+                if len(sequence) >= SEQUENCE_LENGTH:
+                    recording = False
+                    sample_count += 1
+                    print("\n--- Sequence Captured ---")
+                    
+                    # Save the sequence
+                    sequence_array = np.array(sequence).astype(np.float32)
+                    
+                    # Prompt user for label
+                    # To ensure the input prompt appears correctly when running in a console environment,
+                    # we must perform the blocking input operation *outside* the main OpenCV loop's thread.
+                    # A common simple pattern for this type of script is to pause the video feed
+                    # or prompt in the console while the video window is momentarily less reactive.
+                    print("!!! Switch to the console/terminal to enter the label !!!")
+                    current_label = input(f"Enter label for sample {sample_count} (e.g., bicep_curl_1): ")
+                    
+                    file_name = f'{current_label}.npy'
+                    save_path = os.path.join(DATA_PATH, file_name)
+                    
+                    # Save the 60x18 array
+                    np.save(save_path, sequence_array)
+                    
+                    print(f"Successfully saved sequence to {save_path}")
+                    print("Press 'S' to record next sample.")
+                    
+                    # Reset sequence for the next capture (already done before save, but here for clarity)
+                    sequence = []
+            else:
+                # Default status when waiting
+                cv2.putText(image, "Press 'S' to Start Recording", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
 
             # Display the resulting frame
             cv2.imshow('HAR Data Recorder - Press S to Record', image)
@@ -177,11 +206,12 @@ def run_recorder():
             if key & 0xFF == ord('q'):
                 break
             
-            # Start recording when 's' is pressed and not currently recording
-            elif key & 0xFF == ord('s') and not recording:
-                recording = True
-                print("Starting 60-frame capture...")
-                sequence = [] # Ensure sequence is clear on start
+            # Start recording when 's' is pressed and not currently recording or counting down
+            elif key & 0xFF == ord('s') and not recording and not counting_down:
+                counting_down = True
+                start_time = time.time()
+                print(f"Starting {countdown_duration}-second countdown...")
+                
 
     cap.release()
     cv2.destroyAllWindows()
