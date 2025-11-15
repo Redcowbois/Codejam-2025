@@ -9,7 +9,7 @@ import time
 # Location where your trained model was saved
 MODEL_PATH = os.path.join('har_lstm_model', 'model.keras')
 # The duration of one sample sequence (60 frames)
-SEQUENCE_LENGTH = 60 
+SEQUENCE_LENGTH = 35
 
 # Define the SAVED_JOINTS list (must be identical to prepare_data.py)
 SAVED_JOINTS = [
@@ -75,7 +75,7 @@ def run_predictor():
     # Load the trained Keras model
     try:
         model = tf.keras.models.load_model(MODEL_PATH)
-        print(f"✅ Successfully loaded model from {MODEL_PATH}")
+        print(f"Successfully loaded model from {MODEL_PATH}")
     except Exception as e:
         print(f"Error loading model: {e}")
         return
@@ -125,7 +125,7 @@ def run_predictor():
 
         # --- Prediction Logic ---
         if len(sequence) == SEQUENCE_LENGTH:
-            # Convert the list of 60 frames into the required model input shape (1, 60, 18)
+            # Convert the list of 30 frames into the required model input shape (1, 35, 18)
             input_data = np.expand_dims(np.array(sequence, dtype=np.float32), axis=0)
             
             # Make the prediction
@@ -153,8 +153,8 @@ def run_predictor():
         
         # Display the prediction text
         color = (0, 255, 0) if "IDLE" in current_prediction or "RAISE" in current_prediction else (0, 0, 255)
-        cv2.putText(image, current_prediction, (10, 40), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+        cv2.putText(image, current_prediction, (100, 200), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 5, color, 3, cv2.LINE_AA)
 
         cv2.imshow('HAR Predictor', image)
 
