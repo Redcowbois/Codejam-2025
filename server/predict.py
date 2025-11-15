@@ -333,10 +333,10 @@ def run_predictor(camera):
                 current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
             feedback_message = "Waiting"
 
-            if current_prediction != last_prediction:
-                requests.post("http://localhost:5000/opencv", json = {"type" : current_prediction})
-            
-            last_prediction = current_prediction
+        if current_prediction != last_prediction:
+            requests.post("http://localhost:5000/opencv", json = {"type" : current_prediction})
+        
+        last_prediction = current_prediction
 
 
         
