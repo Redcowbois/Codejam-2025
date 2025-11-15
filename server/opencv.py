@@ -1,7 +1,7 @@
 # worker.py
 
 def main(instance_name):
-    while not stop_threads:
+    while True:
         print(f"{instance_name} is running...")
         # do work here
         # sleep or perform loop tasks
