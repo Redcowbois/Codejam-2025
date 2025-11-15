@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import os
 import time
+import requests
 
 
 # --- Configuration (Must Match Training Config) ---
@@ -222,6 +223,7 @@ def run_predictor(camera):
     print("Move to start filling the prediction sequence.")
     print("Press 'Q' to QUIT.")
     
+    last_prediction = "idle"
     while cap.isOpened():
         # ... (Frame capture, pose detection, feature extraction, sequence building remain the same) ...
         ret, frame = cap.read()
@@ -330,6 +332,14 @@ def run_predictor(camera):
             else:
                 current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
             feedback_message = "Waiting"
+
+            if current_prediction != last_prediction:
+                requests.post("http://localhost:5000/opencv", json = {"type" : current_prediction})
+            
+            last_prediction = current_prediction
+
+
+        
 
 
         # --- Display Results ---

@@ -27,30 +27,29 @@ def start_background_threads():
     # Create threads
     mqtt_worker = MQTTWorker()
     t1 = threading.Thread(target=mqtt_worker.main, daemon=True)
-    # -- REMOVED --: The OpenCV process is now handled by the /video_feed route
     t2 = threading.Thread(target=opencv_thread_main, args=(camera,), daemon=True)
 
     # Start them
     t1.start()
     t2.start()
 
-def generate_frames():
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            # Encode frame as JPEG
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            # Yield frame in byte format
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+# def generate_frames():
+#     while True:
+#         success, frame = camera.read()
+#         if not success:
+#             break
+#         else:
+#             # Encode frame as JPEG
+#             ret, buffer = cv2.imencode('.jpg', frame)
+#             frame = buffer.tobytes()
+#             # Yield frame in byte format
+#             yield (b'--frame\r\n'
+#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), 
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+# @app.route('/video_feed')
+# def video_feed():
+#     return Response(generate_frames(), 
+#                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/")
 def index():
@@ -87,7 +86,12 @@ def publish_message():
 
 @app.route("/opencv", methods=["POST"])
 def open_cv():
-    data = request.json
+    payload = request.get_json()  # parses JSON automatically
+    text = payload.get("type", "Unknown")
+    print(text)
+    socketio.emit("type", text)  # broadcast to all clients
+    return {"status": "type_change"}
+
     
 @app.route("/reset", methods=["POST"])
 def reset():
