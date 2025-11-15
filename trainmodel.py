@@ -6,11 +6,13 @@ from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 import os
 
 # --- Configuration ---
-# Load your prepared data (assuming you ran the 'prepare_data.py' script)
-X_train = np.load('X_train.npy')
-X_val = np.load('X_val.npy')
-y_train = np.load('y_train.npy')
-y_val = np.load('y_val.npy')
+TRAINING_DATA_DIR = 'trainingsets'
+
+# Update the loading paths to include the directory
+X_train = np.load(os.path.join(TRAINING_DATA_DIR, 'X_train.npy'))
+X_val = np.load(os.path.join(TRAINING_DATA_DIR, 'X_val.npy'))
+y_train = np.load(os.path.join(TRAINING_DATA_DIR, 'y_train.npy'))
+y_val = np.load(os.path.join(TRAINING_DATA_DIR, 'y_val.npy'))
 
 # Get shape information from the loaded data
 SEQUENCE_LENGTH = X_train.shape[1]  # Should be 60

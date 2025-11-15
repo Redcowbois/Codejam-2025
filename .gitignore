@@ -1,1 +1,4 @@
 test*
+har_lstm_model/
+Logs/
+trainingsets/

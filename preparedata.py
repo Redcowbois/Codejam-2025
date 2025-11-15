@@ -44,7 +44,7 @@ def load_data(data_path, label_to_int):
                 sequence = np.load(os.path.join(data_path, file_name))
                 
                 # Check for correct shape (60 frames, 18 features) - Optional sanity check
-                if sequence.shape == (60, 18):
+                if sequence.shape == (35, 18):
                     X_data.append(sequence)
                     y_labels.append(label_int)
                 else:
@@ -108,10 +108,14 @@ if __name__ == '__main__':
         X_train, X_val, X_test, y_train, y_val, y_test = prepare_for_model(X, y)
         
         # OPTIONAL: Save the processed arrays for later use (highly recommended)
-        np.save('X_train.npy', X_train)
-        np.save('y_train.npy', y_train)
-        np.save('X_val.npy', X_val)
-        np.save('y_val.npy', y_val)
-        np.save('X_test.npy', X_test)
-        np.save('y_test.npy', y_test)
+        DATA_PATH = os.path.join('trainingsets')
+        if not os.path.exists(DATA_PATH):
+            os.makedirs(DATA_PATH)
+        print(f"Created directory: {DATA_PATH}")
+        np.save(os.path.join(DATA_PATH, 'X_train.npy'), X_train)
+        np.save(os.path.join(DATA_PATH, 'y_train.npy'), y_train)
+        np.save(os.path.join(DATA_PATH, 'X_val.npy'), X_val)
+        np.save(os.path.join(DATA_PATH, 'y_val.npy'), y_val)
+        np.save(os.path.join(DATA_PATH, 'X_test.npy'), X_test)
+        np.save(os.path.join(DATA_PATH, 'y_test.npy'), y_test)
         print("\nProcessed data saved as X_train.npy, y_train.npy, etc.")
