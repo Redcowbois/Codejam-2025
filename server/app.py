@@ -25,7 +25,7 @@ def start_background_threads():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", number=counter)
 
 @app.route("/test")
 def test():
