@@ -50,6 +50,21 @@ socket.on("counter", value => {
         counterEl.classList.add("pop");
         setTimeout(() => counterEl.classList.remove("pop"), 250);
     }
+
+    if (value === 3) {
+        fetch("/encourage", { 
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ reps: value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("API response:", data);
+        })
+        .catch(err => console.error("API error:", err));
+    }
 });
 
 /* Update current exercise text */
