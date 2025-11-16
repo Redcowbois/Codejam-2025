@@ -25,7 +25,7 @@ class MQTTWorker:
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode()
         # Call Flask server
-        print("Received MQTT msg: " + payload)
+        # print("Received MQTT msg: " + payload)
 
         if payload == "inc":
             try:
@@ -38,7 +38,8 @@ class MQTTWorker:
             except Exception as e:
                 print("Failed to call Flask:", e)
         else:
-            print("Invalid message: " + payload)
+            # print("Invalid message: " + payload)
+            pass
         
     def process_message(self, data):
         print("Processing:", data)

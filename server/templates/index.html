@@ -119,9 +119,8 @@
 
 <!-- LEFT SIDE CAMERA -->
 <div id="cameraSection">
-    <video id="camera" autoplay playsinline></video>
+    <img src="/video_feed" width="720" height="480">
 </div>
-
 <!-- RIGHT SIDE SIDEBAR -->
 <div id="sidebar">
 
@@ -138,6 +137,12 @@
         <div>Rows (3×10)</div>
         <div style="background:#2b7de9;">Bicep Curls (3×10)</div>
     </div>
+
+    <div class="section">
+        <h3>Current Exercise:</h3>
+        <p id="currentExercise">Bicep Curl</p>
+    </div>
+
 
     <!-- Live Counter -->
     <div class="section">
@@ -167,11 +172,17 @@
 
 <script>
 /* SOCKET.IO CONNECTION */
-const socket = io();
+const socket = io("http://localhost:5000");
 
 /* MQTT LIVE COUNTER UPDATES */
 socket.on("counter", value => {
     document.getElementById("counter").textContent = value;
+});
+
+/* SOCKET.IO: update exercise text */
+socket.on("type", newText => {
+    const exerciseElem = document.getElementById("currentExercise");
+    exerciseElem.textContent = newText;
 });
 
 
@@ -223,18 +234,7 @@ socket.on("start_rest_timer_client", data => {
 });
 
 
-/* CAMERA STREAM */
-const video = document.getElementById("camera");
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-    } catch (err) {
-        alert("Camera access denied.");
-        console.error(err);
-    }
-}
-startCamera();
+
 
 
 </script>
