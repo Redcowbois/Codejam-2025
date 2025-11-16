@@ -46,8 +46,6 @@ def generate_frames():
     
 
 
-
-
 @app.route("/")
 def index():
     return render_template("index.html", number=counter)
@@ -98,11 +96,63 @@ def reset():
     socketio.emit("counter", 0)
     return {"status": "reset"}
 
+
 @app.route("/start_rest", methods=["POST"])
 def start_rest():
-    seconds = int(request.args.get("seconds", 60))
+    payload = request.get_json(silent=True) or {}
+    seconds = payload.get("seconds")
+
+    if seconds is None:
+        seconds = request.args.get("seconds", 60)
+
+    try:
+        seconds = int(seconds)
+    except (ValueError, TypeError):
+        seconds = 60
+
+    print(f"Starting rest timer for {seconds}s")  # Debug log
     socketio.emit("start_rest_timer_client", {"duration": seconds})
     return jsonify({"status": "rest_timer_initialized", "duration": seconds})
+
+
+
+@app.route("/stop_rest", methods=["POST"])
+def stop_rest():
+    # Tell all clients to stop the timer immediately
+    socketio.emit("stop_rest_timer_client")
+    return jsonify({"status": "rest_timer_stopped"})
+
+
+@app.route('/decrease_set_trigger', methods=["POST"])
+def decrease_set_trigger():
+    socketio.emit("update_sets_trigger")
+
+@app.route("/decrease_set", methods=["POST"])
+def decrease_set():
+    data = request.get_json()
+
+    exercise = data.get("exercise")
+    remaining = data.get("remaining")
+
+    if exercise is None or remaining is None:
+        return jsonify({"error": "Missing exercise or remaining"}), 400
+
+    # Decrease remaining sets (but don’t go below 0)
+    new_remaining = max(remaining - 1, 0)
+
+    # Emit update to all clients
+    socketio.emit("update_sets", {
+        "exercise": exercise,
+        "remaining": new_remaining
+    })
+
+    return jsonify({
+        "status": "updated",
+        "exercise": exercise,
+        "remaining_sets": new_remaining
+    })
+
+
 
 @app.route('/video_feed')
 def video_feed():

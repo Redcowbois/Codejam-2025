@@ -33,17 +33,23 @@ class MQTTWorker:
                 requests.post("http://127.0.0.1:5000/mqtt-message", json={"msg": payload})
             except Exception as e:
                 print("Failed to call Flask:", e)
-        elif payload == "stop":
-            try:
-                requests.post("http://127.0.0.1:5000/start_rest?seconds=10", json={"msg": payload})
-            except Exception as e:
-                print("Failed to call Flask:", e)
         elif payload == "START":
             print("test")
             shared_state.flag = 1
+            requests.post("http://127.0.0.1:5000/stop_rest", json={"msg": payload})
         elif payload == "END":
             print("end test")
             shared_state.flag = 0
+            try:
+                requests.post("http://127.0.0.1:5000/reset")
+            except Exception as e:
+                print("Failed to reset:", e)
+
+            # Start rest timer
+            try:
+                requests.post("http://127.0.0.1:5000/start_rest", json={"seconds": 30})
+            except Exception as e:
+                print("Failed to start rest timer:", e)
 
         else:
             # print("Invalid message: " + payload)
