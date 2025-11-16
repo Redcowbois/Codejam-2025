@@ -21,9 +21,7 @@
 <div id="sidebar">
     <div class="section">
         <h1>Sunday Workout Plan</12>
-        <div id="titleBox">  
-            <h2>Current Exercise: Bicep Curl</h2>
-        </div>
+        <div id="titleBox"> <h2>Current Exercise: Lateral Raises</h2> </div>
     </div>
 
 <!-- EXERCISE LIST BOX -->
@@ -77,6 +75,10 @@ socket.on("counter", value => {
         })
         .catch(err => console.error("API error:", err));
     }
+
+    if (value === 5) {
+        decreaseCurrentExerciseSet();
+    }
 });
 
 /* Update current exercise text */
@@ -104,6 +106,13 @@ socket.on("start_rest_timer_client", data => {
         }
     }, 1000);
 });
+
+socket.on("stop_rest_timer_client", () => {
+    const restBox = document.getElementById("overlayRest");
+    restBox.textContent = "Rest: Stopped";
+    if (restInterval) clearInterval(restInterval);
+});
+
 
 function initExerciseSegments() {
     const exercises = document.querySelectorAll(".exercise");
@@ -160,6 +169,70 @@ socket.on("update_sets", data => {
     // data: { exercise: "Bicep Curls", remaining: 2 }
     updateExerciseSets(data.exercise, data.remaining);
 });
+
+
+function decreaseCurrentExerciseSet() {
+    // Get the exercise name from #titleBox h2
+    const titleH2 = document.querySelector("#titleBox h2");
+    if (!titleH2) {
+        console.error("Current exercise title not found");
+        return;
+    }
+
+    // Extract exercise name after "Current Exercise: "
+    const currentExerciseName = titleH2.textContent.replace("Current Exercise: ", "").trim();
+
+    // Find the matching exercise element in the list
+    const exercises = document.querySelectorAll(".exercise");
+    let exerciseEl = null;
+    let remaining = null;
+
+    exercises.forEach(ex => {
+        const name = ex.querySelector(".exercise-name").textContent.trim();
+        if (name === currentExerciseName) {
+            exerciseEl = ex;
+            remaining = parseInt(ex.dataset.remainingSets);
+        }
+    });
+
+    if (!exerciseEl || remaining === null) {
+        console.error("Exercise not found:", currentExerciseName);
+        return;
+    }
+
+    // Send POST request to server
+    fetch("/decrease_set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            exercise: currentExerciseName,
+            remaining: remaining
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Set updated:", data);
+
+        // Update the DOM to reflect the new remaining sets
+        exerciseEl.dataset.remainingSets = data.remaining_sets;
+
+        const totalSets = parseInt(exerciseEl.dataset.totalSets);
+        const setsText = exerciseEl.querySelector(".sets-text");
+        setsText.textContent = `Sets left: ${data.remaining_sets}/${totalSets}`;
+
+        // Update the visual segments
+        const segments = exerciseEl.querySelectorAll(".set-segment");
+        segments.forEach((seg, idx) => {
+            if (idx < data.remaining_sets) {
+                seg.classList.add("completed");
+            } else {
+                seg.classList.remove("completed");
+            }
+        });
+    })
+    .catch(err => console.error("Error:", err));
+}
+
 
 </script>
 
