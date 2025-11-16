@@ -436,6 +436,10 @@ def opencv_run(socketio_backend):
                         s = s[0].lower()
                         s = s.title()
 
+                        s_index = s.find("(")
+                        if s_index != -1:
+                            s = s[:index].strip()
+
                         socketio_backend.emit("update_cur_exercise", s)
                         shared_state.cur_exercise_flag == 0
 
@@ -447,7 +451,7 @@ def opencv_run(socketio_backend):
                     socketio_backend.emit("type", current_prediction)  # broadcast to all clients
             
             last_prediction = current_prediction
-            print(current_prediction)
+            # print(current_prediction)
 
             mp.solutions.drawing_utils.draw_landmarks(
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
