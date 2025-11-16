@@ -222,8 +222,8 @@ def opencv_run(socketio_backend):
     print("\n--- HAR Real-Time Predictor Initialized ---")
     
     last_prediction = "idle"
-    while True:
-        # ... (Frame capture, pose detection, feature extraction, sequence building remain the same) ...
+    while cap.isOpened():
+            # ... (Frame capture, pose detection, feature extraction, sequence building remain the same) ...
         ret, frame = cap.read()
         if not ret:
             continue
@@ -237,114 +237,117 @@ def opencv_run(socketio_backend):
 
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-        # --- Feature Extraction and Sequence Building ---
-        landmarks_list = None 
-        if results.pose_landmarks:
-            landmarks_list = results.pose_landmarks.landmark 
-            normalized_features = normalize_landmarks(landmarks_list)
-            
-            sequence.append(normalized_features)
-            
-            if len(sequence) > SEQUENCE_LENGTH:
-                sequence = sequence[-SEQUENCE_LENGTH:]
-
-        if len(sequence) == SEQUENCE_LENGTH:
-            # 1. Raw Model Prediction
-            input_data = np.expand_dims(np.array(sequence, dtype=np.float32), axis=0)
-            # res IS defined here
-            res = model.predict(input_data, verbose=0)[0]
-            
-            predicted_class_index = np.argmax(res)
-            confidence = res[predicted_class_index]
-            
-            # 2. Check for High-Confidence Action
-            if predicted_class_index != 0 and confidence > HIGH_CONFIDENCE_THRESHOLD:
-                LAST_PREDICTED_LABEL = predicted_class_index
-                LOCK_TIMER_START = time.time()
-            
-            # 3. Apply Cooldown Lock (Aggressive IDLE transition)
-            is_locked = time.time() - LOCK_TIMER_START < LOCK_DURATION
-            is_idle_now = (predicted_class_index == 0)
-
-            if is_locked and not is_idle_now:
-                display_index = LAST_PREDICTED_LABEL
-                display_confidence = confidence 
-            else:
-                display_index = predicted_class_index
-                display_confidence = confidence
-                    
-            # Sequence shifting (to make response faster)
-            sequence = sequence[15:]
-        
-        current_exercise_name = LABEL_MAP.get(display_index, 'IDLE')
-        
-        if display_index != 0 and landmarks_list is not None: 
-            # Action is active or locked
-            
-            form_metrics = check_form(landmarks_list, current_exercise_name)
-            
-            if not rep_in_progress:
-                # --- START OF NEW REP: Reset metrics and calculate feedback ONCE ---
-                rep_in_progress = True
-                
-                # Reset performance metrics for the new rep
-                current_rep_max_r_shoulder = 0.0     
-                current_rep_min_r_elbow = 180.0      
-                current_rep_max_l_shoulder = 0.0
-                current_rep_min_l_elbow = 180.0 
-                
-                # Calculate and lock the initial feedback message
-                feedback_text = form_metrics['feedback']
-                feedback_message = f"{current_exercise_name.upper()}: {feedback_text} ({display_confidence*100:.1f}%)"
-            
-            # --- UPDATE WORST FORM METRICS (Only applicable to Lateral Raise for now) ---
-            if current_exercise_name == 'LATERAL RAISE':
-                try:
-                    # Right Side
-                    if 'r_shoulder_angle' in form_metrics:
-                        current_rep_max_r_shoulder = max(current_rep_max_r_shoulder, form_metrics['r_shoulder_angle'])
-                        current_rep_min_r_elbow = min(current_rep_min_r_elbow, form_metrics['r_elbow_angle'])
-                    # Left Side
-                    if 'l_shoulder_angle' in form_metrics:
-                        current_rep_max_l_shoulder = max(current_rep_max_l_shoulder, form_metrics['l_shoulder_angle'])
-                        current_rep_min_l_elbow = min(current_rep_min_l_elbow, form_metrics['l_elbow_angle'])
-                except:
-                    pass # Ignore if angle keys don't exist yet
-
-            # DURING REP: Always display the LOCKED message
-            current_prediction = feedback_message
-
-        else: # display_index == 0 (IDLE)
-            if rep_in_progress:
-                rep_in_progress = False
-                current_rep_max_l_shoulder = 0
-                current_rep_min_l_elbow = 180
-                current_rep_max_r_shoulder = 0
-                current_rep_min_r_elbow = 180
-                current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
-            else:
-                current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
-            feedback_message = "Waiting"
-
-        if current_prediction != last_prediction:
-            socketio_backend.emit("type", current_prediction)  # broadcast to all clients
-        
-        last_prediction = current_prediction
-        # print(current_prediction)
-
-        mp.solutions.drawing_utils.draw_landmarks(
-            image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-            mp.solutions.drawing_utils.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
-            mp.solutions.drawing_utils.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
-        )
-        
-        # Display the prediction text 
-        color = (0, 255, 0) if display_index == 1 else (0, 0, 255) 
-        cv2.putText(image, current_prediction, (80, 140), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 3, color, 5, cv2.LINE_AA)
         _, buffer = cv2.imencode(".jpg", frame)
         shared_state.latest_jpeg = buffer.tobytes()
+        if shared_state.flag == 1:
+            # --- Feature Extraction and Sequence Building ---
+            landmarks_list = None 
+            if results.pose_landmarks:
+                landmarks_list = results.pose_landmarks.landmark 
+                normalized_features = normalize_landmarks(landmarks_list)
+                
+                sequence.append(normalized_features)
+                
+                if len(sequence) > SEQUENCE_LENGTH:
+                    sequence = sequence[-SEQUENCE_LENGTH:]
+
+            if len(sequence) == SEQUENCE_LENGTH:
+                # 1. Raw Model Prediction
+                input_data = np.expand_dims(np.array(sequence, dtype=np.float32), axis=0)
+                # res IS defined here
+                res = model.predict(input_data, verbose=0)[0]
+                
+                predicted_class_index = np.argmax(res)
+                confidence = res[predicted_class_index]
+                
+                # 2. Check for High-Confidence Action
+                if predicted_class_index != 0 and confidence > HIGH_CONFIDENCE_THRESHOLD:
+                    LAST_PREDICTED_LABEL = predicted_class_index
+                    LOCK_TIMER_START = time.time()
+                
+                # 3. Apply Cooldown Lock (Aggressive IDLE transition)
+                is_locked = time.time() - LOCK_TIMER_START < LOCK_DURATION
+                is_idle_now = (predicted_class_index == 0)
+
+                if is_locked and not is_idle_now:
+                    display_index = LAST_PREDICTED_LABEL
+                    display_confidence = confidence 
+                else:
+                    display_index = predicted_class_index
+                    display_confidence = confidence
+                        
+                # Sequence shifting (to make response faster)
+                sequence = sequence[15:]
+            
+            current_exercise_name = LABEL_MAP.get(display_index, 'IDLE')
+            
+            if display_index != 0 and landmarks_list is not None: 
+                # Action is active or locked
+                
+                form_metrics = check_form(landmarks_list, current_exercise_name)
+                
+                if not rep_in_progress:
+                    # --- START OF NEW REP: Reset metrics and calculate feedback ONCE ---
+                    rep_in_progress = True
+                    
+                    # Reset performance metrics for the new rep
+                    current_rep_max_r_shoulder = 0.0     
+                    current_rep_min_r_elbow = 180.0      
+                    current_rep_max_l_shoulder = 0.0
+                    current_rep_min_l_elbow = 180.0 
+                    
+                    # Calculate and lock the initial feedback message
+                    feedback_text = form_metrics['feedback']
+                    feedback_message = f"{current_exercise_name.upper()}: {feedback_text} ({display_confidence*100:.1f}%)"
+                
+                # --- UPDATE WORST FORM METRICS (Only applicable to Lateral Raise for now) ---
+                if current_exercise_name == 'LATERAL RAISE':
+                    try:
+                        # Right Side
+                        if 'r_shoulder_angle' in form_metrics:
+                            current_rep_max_r_shoulder = max(current_rep_max_r_shoulder, form_metrics['r_shoulder_angle'])
+                            current_rep_min_r_elbow = min(current_rep_min_r_elbow, form_metrics['r_elbow_angle'])
+                        # Left Side
+                        if 'l_shoulder_angle' in form_metrics:
+                            current_rep_max_l_shoulder = max(current_rep_max_l_shoulder, form_metrics['l_shoulder_angle'])
+                            current_rep_min_l_elbow = min(current_rep_min_l_elbow, form_metrics['l_elbow_angle'])
+                    except:
+                        pass # Ignore if angle keys don't exist yet
+
+                # DURING REP: Always display the LOCKED message
+                current_prediction = feedback_message
+
+            else: # display_index == 0 (IDLE)
+                if rep_in_progress:
+                    rep_in_progress = False
+                    current_rep_max_l_shoulder = 0
+                    current_rep_min_l_elbow = 180
+                    current_rep_max_r_shoulder = 0
+                    current_rep_min_r_elbow = 180
+                    current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
+                else:
+                    current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
+                feedback_message = "Waiting"
+
+            if current_prediction != last_prediction:
+                print("its insidetvewcgh4wuhvewvhut")
+                socketio_backend.emit("type", current_prediction)  # broadcast to all clients
+            
+            last_prediction = current_prediction
+            # print(current_prediction)
+
+            mp.solutions.drawing_utils.draw_landmarks(
+                image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                mp.solutions.drawing_utils.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                mp.solutions.drawing_utils.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
+            )
+            
+            # Display the prediction text 
+            color = (0, 255, 0) if display_index == 1 else (0, 0, 255) 
+            cv2.putText(image, current_prediction, (80, 140), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 3, color, 5, cv2.LINE_AA)
+        else:
+            pass
 
     cap.release()
     cv2.destroyAllWindows()
