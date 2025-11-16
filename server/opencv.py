@@ -329,9 +329,18 @@ def opencv_run(socketio_backend):
                     current_prediction = f"{current_exercise_name.upper()} ({display_confidence*100:.1f}%)"
                 feedback_message = "Waiting"
 
-            if current_prediction != last_prediction:
-                print("its insidetvewcgh4wuhvewvhut")
-                socketio_backend.emit("type", current_prediction)  # broadcast to all clients
+            current_split = current_prediction.split(" ")
+            last_split = last_prediction.split(" ")
+            if current_split[0] != last_split[0]:
+                print("MEOWW IN IF " + current_prediction)
+                if (current_split[0] != "IDLE"):
+                    index = current_prediction.find("(")
+
+                    # If "(" exists, cut off everything from it (including)
+                    if index != -1:
+                        current_prediction = current_prediction[:index].strip()
+
+                    socketio_backend.emit("type", current_prediction)  # broadcast to all clients
             
             last_prediction = current_prediction
             # print(current_prediction)
