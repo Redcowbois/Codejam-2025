@@ -15,7 +15,7 @@ counter = 0
 BROKER_HOST = "localhost"     
 BROKER_PORT = 1883
 MQTT_TOPIC_ENCOURAGEMENT = "encouragement"
-LABEL_MAP = {0: 'IDLE', 1: 'LATERAL RAISE', 2: 'SQUAT'}
+LABEL_MAP = {0: 'BICEP CURL', 1: 'IDLE', 2: 'LATERAL RAISE'}
 
 
 EXERCISE_CONFIG = {
@@ -28,14 +28,25 @@ EXERCISE_CONFIG = {
             'SHOULDER_MIN': 60,   # Must lift higher than this
             'SHOULDER_MAX': 120,  # Must lift lower than this (don't go too high)
             'ELBOW_MIN': 150,     # Must keep elbow straighter than this
+             'ABDUCTION_MIN': 20,
         }
     },
-    'SQUAT': {
+    'BICEP CURL': {
         'JOINTS_FOR_CHECK': [
-            # Placeholder: Would use Hip, Knee, Ankle for squat check
+            {'shoulder': mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value,
+             'elbow': mp.solutions.pose.PoseLandmark.RIGHT_ELBOW.value,
+             'wrist': mp.solutions.pose.PoseLandmark.RIGHT_WRIST.value,
+             'side': 'Right'},
+            {'shoulder': mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value,
+             'elbow': mp.solutions.pose.PoseLandmark.LEFT_ELBOW.value,
+             'wrist': mp.solutions.pose.PoseLandmark.LEFT_WRIST.value,
+             'side': 'Left'},
         ],
         'THRESHOLDS': {
-            'KNEE_MIN': 80,  # Example: Must squat deeper than this knee angle
+            'ELBOW_MIN': 30,      # Fully flexed elbow (curl)
+            'ELBOW_MAX': 160,     # Fully extended
+            'SHOULDER_MAX': 45,   # Keep upper arm stable (not swinging)
+            'ABDUCTION_MAX': 30,
         }
     }
 }
@@ -85,24 +96,42 @@ def check_form(landmarks, exercise_name):
     config = EXERCISE_CONFIG[exercise_name]
     thresholds = config['THRESHOLDS']
     feedback = ""
-    
+    form_metrics = {}
     try:
         if exercise_name == 'LATERAL RAISE':
+            # Need to get center of body for abduction calculation
+            r_hip = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_HIP.value]
+            l_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP.value]
+            center_hip = np.array([(r_hip.x + l_hip.x) / 2, 
+                                   (r_hip.y + l_hip.y) / 2, 
+                                   (r_hip.z + l_hip.z) / 2])
             
             for joint_set in config['JOINTS_FOR_CHECK']:
                 side = joint_set['side']
                 
-                # 1. Get Coordinates of Key Joints
-                shoulder_coords = [landmarks[joint_set['shoulder']].x, landmarks[joint_set['shoulder']].y, landmarks[joint_set['shoulder']].z]
-                elbow_coords = [landmarks[joint_set['elbow']].x, landmarks[joint_set['elbow']].y, landmarks[joint_set['elbow']].z]
-                wrist_coords = [landmarks[joint_set['wrist']].x, landmarks[joint_set['wrist']].y, landmarks[joint_set['wrist']].z]
-                hip_coords = [landmarks[joint_set['hip']].x, landmarks[joint_set['hip']].y, landmarks[joint_set['hip']].z]
+                # Get Coordinates of Key Joints
+                shoulder_coords = [landmarks[joint_set['shoulder']].x, 
+                                  landmarks[joint_set['shoulder']].y, 
+                                  landmarks[joint_set['shoulder']].z]
+                elbow_coords = [landmarks[joint_set['elbow']].x, 
+                               landmarks[joint_set['elbow']].y, 
+                               landmarks[joint_set['elbow']].z]
+                wrist_coords = [landmarks[joint_set['wrist']].x, 
+                               landmarks[joint_set['wrist']].y, 
+                               landmarks[joint_set['wrist']].z]
+                hip_coords = [landmarks[joint_set['hip']].x, 
+                             landmarks[joint_set['hip']].y, 
+                             landmarks[joint_set['hip']].z]
                 
-                # 2. Calculate Angles
+                # Calculate Angles
                 elbow_angle = calculate_angle(shoulder_coords, elbow_coords, wrist_coords)
                 shoulder_angle = calculate_angle(hip_coords, shoulder_coords, elbow_coords)
                 
-                # 3. Form Check Logic
+                # NEW: Calculate abduction (how far arm is from centerline)
+                # Use elbow position to determine if arm is out to the side
+                abduction_angle = calculate_angle(center_hip.tolist(), shoulder_coords, elbow_coords)
+                
+                # Form Check Logic
                 if shoulder_angle < thresholds['SHOULDER_MIN']:
                     feedback += f"Lift {side} shoulder higher! "
                 
@@ -112,14 +141,68 @@ def check_form(landmarks, exercise_name):
                 if elbow_angle < thresholds['ELBOW_MIN']:
                     feedback += f"Straighten {side} elbow! "
                 
-                # Attach angles to metrics for tracking (important for the LLM output)
+                # NEW: Check if arms are going out to sides
+                if abduction_angle < thresholds.get('ABDUCTION_MIN', 0):
+                    feedback += f"Move {side} arm more to the side! "
+                
+                # Store metrics
                 if side == 'Right':
-                    form_metrics = {'r_shoulder_angle': shoulder_angle, 'r_elbow_angle': elbow_angle}
-                else: # Left
-                    form_metrics.update({'l_shoulder_angle': shoulder_angle, 'l_elbow_angle': elbow_angle})
-                    
-        # Add 'elif exercise_name == 'SQUAT':' here for future exercises
+                    form_metrics['r_shoulder_angle'] = shoulder_angle
+                    form_metrics['r_elbow_angle'] = elbow_angle
+                    form_metrics['r_abduction_angle'] = abduction_angle  # NEW
+                else:
+                    form_metrics['l_shoulder_angle'] = shoulder_angle
+                    form_metrics['l_elbow_angle'] = elbow_angle
+                    form_metrics['l_abduction_angle'] = abduction_angle  # NEW
+
+        elif exercise_name == 'BICEP CURL':
+            # Get body center for abduction check
+            r_shoulder = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value]
+            l_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value]
+            center_shoulder = np.array([(r_shoulder.x + l_shoulder.x) / 2,
+                                        (r_shoulder.y + l_shoulder.y) / 2,
+                                        (r_shoulder.z + l_shoulder.z) / 2])
             
+            for joint_set in config['JOINTS_FOR_CHECK']:
+                side = joint_set['side']
+                shoulder_coords = [landmarks[joint_set['shoulder']].x,
+                                   landmarks[joint_set['shoulder']].y,
+                                   landmarks[joint_set['shoulder']].z]
+                elbow_coords = [landmarks[joint_set['elbow']].x,
+                                landmarks[joint_set['elbow']].y,
+                                landmarks[joint_set['elbow']].z]
+                wrist_coords = [landmarks[joint_set['wrist']].x,
+                                landmarks[joint_set['wrist']].y,
+                                landmarks[joint_set['wrist']].z]
+
+                elbow_angle = calculate_angle(shoulder_coords, elbow_coords, wrist_coords)
+                shoulder_angle = calculate_angle(elbow_coords, shoulder_coords, 
+                                                [shoulder_coords[0], shoulder_coords[1]-0.1, shoulder_coords[2]])
+                
+                # NEW: Calculate how far elbow is from body center
+                abduction_angle = calculate_angle(center_shoulder.tolist(), shoulder_coords, elbow_coords)
+
+                # Feedback checks
+                if elbow_angle < thresholds['ELBOW_MIN']:
+                    feedback += f"Extend {side} elbow more! "
+                if elbow_angle > thresholds['ELBOW_MAX']:
+                    feedback += f"Flex {side} elbow more! "
+                if shoulder_angle > thresholds['SHOULDER_MAX']:
+                    feedback += f"Keep {side} upper arm stable! "
+                
+                # NEW: Check arms stay close to body
+                if abduction_angle > thresholds.get('ABDUCTION_MAX', 180):
+                    feedback += f"Keep {side} arm closer to body! "
+
+                # Store metrics
+                if side == 'Right':
+                    form_metrics['r_elbow_angle'] = elbow_angle
+                    form_metrics['r_shoulder_angle'] = shoulder_angle
+                    form_metrics['r_abduction_angle'] = abduction_angle  # NEW
+                else:
+                    form_metrics['l_elbow_angle'] = elbow_angle
+                    form_metrics['l_shoulder_angle'] = shoulder_angle
+                    form_metrics['l_abduction_angle'] = abduction_angle  # NEW
         if not feedback:
             feedback = "PERFECT FORM."
             
@@ -195,7 +278,7 @@ def opencv_run(socketio_backend):
     sequence = []
     
     # --- STABILITY VARIABLES ---
-    LAST_PREDICTED_LABEL = 0           
+    LAST_PREDICTED_LABEL = 1           
     LOCK_TIMER_START = time.time()     
     LOCK_DURATION = 0.05                
     HIGH_CONFIDENCE_THRESHOLD = 0.75   
@@ -261,13 +344,13 @@ def opencv_run(socketio_backend):
                 confidence = res[predicted_class_index]
                 
                 # 2. Check for High-Confidence Action
-                if predicted_class_index != 0 and confidence > HIGH_CONFIDENCE_THRESHOLD:
+                if predicted_class_index != 1 and confidence > HIGH_CONFIDENCE_THRESHOLD:
                     LAST_PREDICTED_LABEL = predicted_class_index
                     LOCK_TIMER_START = time.time()
                 
                 # 3. Apply Cooldown Lock (Aggressive IDLE transition)
                 is_locked = time.time() - LOCK_TIMER_START < LOCK_DURATION
-                is_idle_now = (predicted_class_index == 0)
+                is_idle_now = (predicted_class_index == 1)
 
                 if is_locked and not is_idle_now:
                     display_index = LAST_PREDICTED_LABEL
@@ -281,7 +364,7 @@ def opencv_run(socketio_backend):
             
             current_exercise_name = LABEL_MAP.get(display_index, 'IDLE')
             
-            if display_index != 0 and landmarks_list is not None: 
+            if display_index != 1 and landmarks_list is not None and current_exercise_name != 'IDLE': 
                 # Action is active or locked
                 
                 form_metrics = check_form(landmarks_list, current_exercise_name)
@@ -297,10 +380,12 @@ def opencv_run(socketio_backend):
                     current_rep_min_l_elbow = 180.0 
                     
                     # Calculate and lock the initial feedback message
-                    feedback_text = form_metrics['feedback']
+                    feedback_text = form_metrics.get('feedback', 'Error')
                     feedback_message = f"{current_exercise_name.upper()}: {feedback_text} ({display_confidence*100:.1f}%)"
                 
                 # --- UPDATE WORST FORM METRICS (Only applicable to Lateral Raise for now) ---
+                form_metrics = form_metrics if isinstance(form_metrics, dict) else {}
+
                 if current_exercise_name == 'LATERAL RAISE':
                     try:
                         # Right Side
@@ -313,11 +398,23 @@ def opencv_run(socketio_backend):
                             current_rep_min_l_elbow = min(current_rep_min_l_elbow, form_metrics['l_elbow_angle'])
                     except:
                         pass # Ignore if angle keys don't exist yet
+                elif current_exercise_name == 'BICEP CURL':
+                    try:
+                        # Right arm
+                        if 'r_elbow_angle' in form_metrics:
+                            current_rep_min_r_elbow = min(current_rep_min_r_elbow, form_metrics['r_elbow_angle'])
+                            current_rep_max_r_shoulder = max(current_rep_max_r_shoulder, form_metrics['r_shoulder_angle'])
 
+                        # Left arm
+                        if 'l_elbow_angle' in form_metrics:
+                            current_rep_min_l_elbow = min(current_rep_min_l_elbow, form_metrics['l_elbow_angle'])
+                            current_rep_max_l_shoulder = max(current_rep_max_l_shoulder, form_metrics['l_shoulder_angle'])
+                    except:
+                        pass
                 # DURING REP: Always display the LOCKED message
                 current_prediction = feedback_message
 
-            else: # display_index == 0 (IDLE)
+            else: # display_index == 1 (IDLE)
                 if rep_in_progress:
                     rep_in_progress = False
                     current_rep_max_l_shoulder = 0
@@ -350,7 +447,7 @@ def opencv_run(socketio_backend):
                     socketio_backend.emit("type", current_prediction)  # broadcast to all clients
             
             last_prediction = current_prediction
-            # print(current_prediction)
+            print(current_prediction)
 
             mp.solutions.drawing_utils.draw_landmarks(
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
