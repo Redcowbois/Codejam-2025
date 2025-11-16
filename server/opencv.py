@@ -445,10 +445,10 @@ def opencv_run(socketio_backend):
                         current_prediction = current_prediction[:index].strip()
                     t = current_prediction.split(":")
 
-                    socketio_backend.emit("type", t[1])  # broadcast to all clients
+                    socketio_backend.emit("type", current_prediction)  # broadcast to all clients
             
             last_prediction = current_prediction
-            print(current_prediction)
+            # print(current_prediction)
 
             mp.solutions.drawing_utils.draw_landmarks(
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
