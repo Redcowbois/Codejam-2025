@@ -18,7 +18,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 # Global vars
 counter = 0
-BROKER_HOST = "10.74.242.184"  
+BROKER_HOST = "localhost"  
 BROKER_PORT = 1883
 MQTT_TOPIC_ENCOURAGEMENT = "dac"
 mqtt_client = mqtt.Client()
