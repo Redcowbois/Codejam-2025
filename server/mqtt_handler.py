@@ -28,7 +28,7 @@ class MQTTWorker:
         # Call Flask server
         # print("Received MQTT msg: " + payload)
 
-        if payload == "inc":
+        if payload == "inc" and shared_state.flag == 1:                
             try:
                 requests.post("http://127.0.0.1:5000/mqtt-message", json={"msg": payload})
             except Exception as e:
@@ -52,10 +52,8 @@ class MQTTWorker:
                 requests.post("http://127.0.0.1:5000/start_rest", json={"seconds": 30})
             except Exception as e:
                 print("Failed to start rest timer:", e)
-
         else:
-            # print("Invalid message: " + payload)
-            pass
+            print("Invalid message: " + payload)
         
     def process_message(self, data):
         print("Processing:", data)
