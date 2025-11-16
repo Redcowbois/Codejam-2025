@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "stm32l4s5i_iot01_accelero.h"
+#include "wifi.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,7 +34,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define TX_BUFFER_SIZE 1024
+#define RX_BUFFER_SIZE 1024
+#define TX_TIMEOUT 2000
+#define RX_TIMEOUT 2000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,7 +54,8 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 static int32_t rep_count = 0;
-
+uint8_t txBuffer[TX_BUFFER_SIZE];
+uint8_t rxBuffer[RX_BUFFER_SIZE];
 typedef enum {
   STATE_IDLE = 0,
   STATE_MOVING_DOWN,
@@ -61,6 +66,21 @@ static rep_state_t rep_state = STATE_IDLE;
 
 static const int32_t NEG_THRESHOLD_Z = -100;  // mg, going down
 static const int32_t POS_THRESHOLD_Z =  100;  // mg, going up
+
+typedef enum {
+  DUMBBELL_NO_CHANGE,
+  DUMBBELL_GROUNDED,
+  DUMBBELL_LIFTED
+} dumbbell_event_t;
+
+volatile dumbbell_event_t dumbbell_event = DUMBBELL_NO_CHANGE;
+
+WIFI_HandleTypeDef hwifi;
+
+char ssid[] = "Demacia";
+char passphrase[] = "flashqmastery7r";
+
+__IO FlagStatus cmdDataReady = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -132,8 +152,9 @@ void Accel_ReadAndUpdateReps(void)
         rep_state = STATE_IDLE;
 
         char buf[64];
-        snprintf(buf, sizeof(buf), "Rep count: %ld\r\n", (long)rep_count);
-        UART_Print(buf);
+        snprintf(buf, sizeof(buf), "Rep count: %ld", (long)rep_count);   // no \r\n needed for MQTT
+        WIFI_MQTTPublish(&hwifi, "+1", 3);
+
       }
       break;
 
@@ -153,14 +174,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
     if (HAL_GPIO_ReadPin(port, GPIO_Pin) == GPIO_PIN_RESET)
     {
-      // Falling edge: Pin is now LOW (connected to ground)
-      printf("Dumbbell on the ground\r\n");
+        // Pin is now LOW (grounded) -> Set the flag
+        dumbbell_event = DUMBBELL_GROUNDED;
     }
     else
     {
-      // Rising edge: Pin is now HIGH (disconnected from ground, pulled up)
-      printf("Dumbbell lifted\r\n");
+        // Pin is now HIGH (lifted) -> Set the flag
+        dumbbell_event = DUMBBELL_LIFTED;
     }
+
   }
 }
 /* USER CODE END 0 */
@@ -198,7 +220,20 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
+  hwifi.handle = &hspi3;
+  hwifi.ssid = ssid;
+  hwifi.passphrase = passphrase;
+  hwifi.securityType = WPA_MIXED;
+  hwifi.DHCP = SET;
+  hwifi.ipStatus = IP_V4;
+  hwifi.transportProtocol = WIFI_TCP_PROTOCOL;
+  hwifi.port = 1883;
+  sprintf(hwifi.mqtt.publishTopic, "test");
+	sprintf(hwifi.remoteIpAddress, "10.74.242.116");
 
+	WIFI_Init(&hwifi);
+	WIFI_JoinNetwork(&hwifi);
+	WIFI_MQTTClientInit(&hwifi);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -208,6 +243,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	// Check for and handle dumbbell state changes from the ISR
+    if (dumbbell_event != DUMBBELL_NO_CHANGE)
+    {
+      if (dumbbell_event == DUMBBELL_GROUNDED)
+      {
+        WIFI_MQTTPublish(&hwifi, "END", 4);
+      }
+      else if (dumbbell_event == DUMBBELL_LIFTED)
+      {
+        WIFI_MQTTPublish(&hwifi, "START", 6);
+      }
+      dumbbell_event = DUMBBELL_NO_CHANGE; // Reset the flag
+    }
     Accel_ReadAndUpdateReps();
     HAL_Delay(20); // ~50 Hz sampling
   }
@@ -414,12 +462,12 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(WIFI_NSS_GPIO_Port, WIFI_NSS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, WIFI_RESET_Pin|WIFI_NSS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -427,18 +475,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : WIFI_RESET_Pin WIFI_NSS_Pin */
+  GPIO_InitStruct.Pin = WIFI_RESET_Pin|WIFI_NSS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PD14 */
   GPIO_InitStruct.Pin = GPIO_PIN_14;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : WIFI_NSS_Pin */
-  GPIO_InitStruct.Pin = WIFI_NSS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(WIFI_NSS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : WIFI_CMD_DATA_READY_Pin */
   GPIO_InitStruct.Pin = WIFI_CMD_DATA_READY_Pin;

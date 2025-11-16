@@ -1,4 +1,4 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
+Core/Src/wifi.o: ../Core/Src/wifi.c ../Core/Inc/wifi.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h \
  ../Core/Inc/stm32l4xx_hal_conf.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rcc.h \
@@ -30,13 +30,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
- /home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/stm32l4s5i_iot01_accelero.h \
- /home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/stm32l4s5i_iot01.h \
- /home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/lsm6dsl.h \
- /home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/../Common/accelero.h \
- /home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/../Common/gyro.h \
- ../Core/Inc/wifi.h ../Core/Inc/main.h
-../Core/Inc/main.h:
+ ../Core/Inc/main.h
+../Core/Inc/wifi.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_rcc.h:
@@ -68,10 +63,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_spi_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
-/home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/stm32l4s5i_iot01_accelero.h:
-/home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/stm32l4s5i_iot01.h:
-/home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/lsm6dsl.h:
-/home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/../Common/accelero.h:
-/home/christopher/Desktop/Uni/Fall\ 2025/codejam/Codejam-2025/STMPublisher/Drivers/BSP/B-L4S5I-IOT01/../Components/lsm6dsl/../Common/gyro.h:
-../Core/Inc/wifi.h:
 ../Core/Inc/main.h:
