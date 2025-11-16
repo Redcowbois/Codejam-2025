@@ -55,11 +55,17 @@ body {
 
 /* Rest timer → top-right inside camera box */
 #overlayRest {
-    top: 15px;
-    right: 15px;
+    position: absolute;
+    top: 115px;
+    left: 15px;     /* aligned under the rep counter */
     font-size: 32px;
-    color: #91b4ff;
+    color: #ffffff;
+    background: none;        /* REMOVE BACKGROUND */
+    backdrop-filter: none;   /* REMOVE BLUR */
+    padding: 0;              /* Remove padding used for box */
+    box-shadow: none;        /* Remove shadow */
 }
+
 
 /* Pop animation for reps */
 .pop {
@@ -77,9 +83,34 @@ body {
     box-shadow: -4px 0 10px rgba(0,0,0,0.4);
 }
 
+#titleBox {
+    background: #5e8df5; 
+    padding: 18px 20px;
+    border-radius: 14px;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Style the title itself */
+#titleBox h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;   /* Same accent blue as your h3 box titles */
+}
+
+
+
+
 h2, h3 { margin-top: 0; }
 
-.section { margin-bottom: 30px; }
+h1 {
+    font-size: 40px;   /* adjust as needed */
+    font-weight: 800;  /* optional, makes it bold and clean */
+}
+
+.section { margin-bottom: 0px; }
 
 .exercise-list div {
     background: #1e222b;
@@ -93,3 +124,83 @@ h2, h3 { margin-top: 0; }
 .exercise-list div:hover { background: #2b7de9; }
 
 .selected { background: #2b7de9 !important; }
+
+/* Shared box styling */
+#currentExerciseBox,
+#exerciseListBox {
+    background: #1e222b;
+    padding: 20px;
+    border-radius: 14px;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Headings for both boxes */
+#currentExerciseBox h3,
+#exerciseListBox h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #91b4ff;
+}
+
+/* Current exercise text */
+#currentExercise {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 10px;
+}
+
+/* Exercise list container spacing */
+#exerciseListBox {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Individual exercise items */
+.exercise {
+    background: #13161d;
+    padding: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.exercise:hover {
+    background: #2b7de9;
+}
+
+.exercise-name {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+/* Segmented sets bar */
+.sets-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.set-segment {
+    flex: 1;
+    height: 12px;
+    background: #1e222b;
+    border-radius: 4px;
+}
+
+.set-segment.completed {
+    background: linear-gradient(90deg, #2b7de9, #91b4ff);
+}
+
+.sets-text {
+    font-size: 14px;
+    color: #ffffff;
+    font-weight: 500;
+}
