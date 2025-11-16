@@ -49,7 +49,7 @@ body {
     top: 15px;
     left: 15px;
     font-size: 60px;
-    color: #2b7de9;
+    color: #579af3;
     transition: transform 0.25s ease;
 }
 
@@ -84,7 +84,7 @@ body {
 }
 
 #titleBox {
-    background: #457ffb; 
+    background: #3472f8; 
     padding: 18px 20px;
     border-radius: 14px;
     margin-top: 20px;
