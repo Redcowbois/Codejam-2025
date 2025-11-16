@@ -17,26 +17,37 @@
     </div>
 </div>
 
+<!-- SIDEBAR -->
 <div id="sidebar">
-
     <div class="section">
         <h1>Sunday Workout Plan</12>
-        <h2>Current Exercise: Bicep Curl</h2>
+        <div id="titleBox">  
+            <h2>Current Exercise: Bicep Curl</h2>
+        </div>
     </div>
 
-    <div class="section exercise-list">
+<!-- EXERCISE LIST BOX -->
+    <div id="exerciseListBox">
         <h3>Exercises</h3>
-        <div>Push Ups (3×10)</div>
-        <div>Squats (3×12)</div>
-        <div>Rows (3×10)</div>
-        <div class="selected">Bicep Curls (3×10)</div>
+
+        <div class="exercise" data-total-sets="3" data-remaining-sets="3">
+            <span class="exercise-name">Lateral Raises</span>
+            <div class="sets-bar"></div>
+            <span class="sets-text">Sets left: 3/3</span>
+        </div>
+
+        <div class="exercise" data-total-sets="3" data-remaining-sets="3">
+            <span class="exercise-name">Bicep Curls</span>
+            <div class="sets-bar"></div>
+            <span class="sets-text">Sets left: 3/3</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Current Exercise:</h3>
+    <!-- CURRENT EXERCISE BOX -->
+    <div id="currentExerciseBox">
+        <h3>Form Feedback</h3>
         <p id="currentExercise">Bicep Curl</p>
     </div>
-
 </div>
 
 <script>
@@ -93,6 +104,63 @@ socket.on("start_rest_timer_client", data => {
         }
     }, 1000);
 });
+
+function initExerciseSegments() {
+    const exercises = document.querySelectorAll(".exercise");
+    exercises.forEach(ex => {
+        const totalSets = parseInt(ex.dataset.totalSets);
+        const setsBar = ex.querySelector(".sets-bar");
+
+        // Clear any previous segments
+        setsBar.innerHTML = "";
+
+        for (let i = 0; i < totalSets; i++) {
+            const segment = document.createElement("div");
+            segment.classList.add("set-segment");
+            if (i < parseInt(ex.dataset.remainingSets)) {
+                segment.classList.add("completed"); // filled initially
+            }
+            setsBar.appendChild(segment);
+        }
+
+        // Set initial text
+        const textEl = ex.querySelector(".sets-text");
+        textEl.textContent = `Sets left: ${ex.dataset.remainingSets}/${totalSets}`;
+    });
+}
+
+// Call this once on page load
+initExerciseSegments();
+
+// Function to update sets
+function updateExerciseSets(exerciseName, remainingSets) {
+    const exercises = document.querySelectorAll(".exercise");
+    exercises.forEach(ex => {
+        if (ex.querySelector(".exercise-name").textContent === exerciseName) {
+            const totalSets = parseInt(ex.dataset.totalSets);
+            ex.dataset.remainingSets = remainingSets;
+
+            const segments = ex.querySelectorAll(".set-segment");
+            segments.forEach((seg, idx) => {
+                if (idx < remainingSets) {
+                    seg.classList.add("completed");
+                } else {
+                    seg.classList.remove("completed");
+                }
+            });
+
+            const textEl = ex.querySelector(".sets-text");
+            textEl.textContent = `Sets left: ${remainingSets}/${totalSets}`;
+        }
+    });
+}
+
+// Example: fetch updates from server/socket
+socket.on("update_sets", data => {
+    // data: { exercise: "Bicep Curls", remaining: 2 }
+    updateExerciseSets(data.exercise, data.remaining);
+});
+
 </script>
 
 </body>
