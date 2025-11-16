@@ -8,7 +8,7 @@ import time
 import shared_state
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SEQUENCE_LENGTH = 35
-MODEL_PATH = "/Users/tylervuong/Codejam-2025/har_lstm_model/model.keras" #os.path.join(SCRIPT_DIR, '..', 'har_lstm_model', 'model.keras')
+MODEL_PATH = os.path.join(SCRIPT_DIR, '..', 'har_lstm_model', 'model.keras')
 print(f"Checking Model Path: {MODEL_PATH}")
 # Global vars
 counter = 0
@@ -332,7 +332,7 @@ def opencv_run(socketio_backend):
             socketio_backend.emit("type", current_prediction)  # broadcast to all clients
         
         last_prediction = current_prediction
-        print(current_prediction)
+        # print(current_prediction)
 
         mp.solutions.drawing_utils.draw_landmarks(
             image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,

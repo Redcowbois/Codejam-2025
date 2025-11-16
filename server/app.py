@@ -15,7 +15,7 @@ from opencv import opencv_run
 import shared_state
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 # Global vars
 counter = 0
 BROKER_HOST = "localhost"     
@@ -113,4 +113,4 @@ def video_feed():
 
 if __name__ == "__main__":
     start_background_threads()
-    socketio.run(app, debug=True, use_reloader=False)
+    socketio.run(app, debug=False, use_reloader=False)
