@@ -295,7 +295,7 @@ def opencv_run(socketio_backend):
     current_rep_min_l_elbow = 180.0 
     
     # Variables that MUST be initialized outside the sequence block
-    display_index = 0
+    display_index = 1
     display_confidence = 1.0
     landmarks_list = None
     predicted_class_index = 0
@@ -311,7 +311,6 @@ def opencv_run(socketio_backend):
         if not ret:
             continue
         
-        frame = cv2.flip(frame, 1)
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
 
@@ -448,7 +447,7 @@ def opencv_run(socketio_backend):
                     socketio_backend.emit("type", current_prediction)  # broadcast to all clients
             
             last_prediction = current_prediction
-            # print(current_prediction)
+            print(current_prediction)
 
             mp.solutions.drawing_utils.draw_landmarks(
                 image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
