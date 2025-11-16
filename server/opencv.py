@@ -328,7 +328,6 @@ def opencv_run(socketio_backend):
             feedback_message = "Waiting"
 
         if current_prediction != last_prediction:
-            print("its insidetvewcgh4wuhvewvhut")
             socketio_backend.emit("type", current_prediction)  # broadcast to all clients
         
         last_prediction = current_prediction

@@ -1,127 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Workout Tracker</title>
+<meta charset="UTF-8" />
+<title>Workout Tracker</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+    body {
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+        background-color: #0f1115;
+        color: white;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #0f1115;
-            color: white;
-            display: flex;
-            height: 100vh;
-            overflow: hidden; /* This is important to keep the main page from scrolling */
-        }
+    /* LEFT CAMERA AREA */
+    #cameraSection {
+        flex: 3;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #1a1d24;
+    }
 
-        /* LEFT SIDE: CAMERA */
-        #cameraSection {
-            flex: 2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #1a1d24;
-            position: relative;
-        }
+    #cameraWrapper {
+        position: relative;
+        width: 90%;
+        max-width: 1000px;
+        border-radius: 20px;
+        overflow: hidden; /* ensures overlays and camera corners match */
+    }
 
-        video {
-            width: 90%;
-            max-width: 800px;
-            border-radius: 12px;
-            border: 4px solid #2b7de9;
-        }
+    #cameraFeed {
+        width: 100%;
+        display: block;
+        object-fit: cover;
+        transform: scaleX(-1); /* flip camera */
+    }
 
-        /* RIGHT SIDE: SIDEBAR */
-        #sidebar {
-            flex: 1;
-            background: #13161d;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: -4px 0 10px rgba(0,0,0,0.4);
-            overflow-y: auto; /* --- THIS IS THE ADDED LINE --- */
-        }
+    /* OVERLAYS */
+    #overlayCounter, #overlayRest {
+        position: absolute;
+        padding: 12px 20px;
+        background: rgba(0, 0, 0, 0.45);
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        backdrop-filter: blur(10px);
+        font-weight: 700;
+        z-index: 10;
+    }
 
-        h2, h3 {
-            margin-top: 0;
-        }
+    /* Rep counter → top-left inside camera box */
+    #overlayCounter {
+        top: 15px;
+        left: 15px;
+        font-size: 60px;
+        color: #2b7de9;
+        transition: transform 0.25s ease;
+    }
 
-        .section {
-            margin-bottom: 30px;
-        }
+    /* Rest timer → top-right inside camera box */
+    #overlayRest {
+        top: 15px;
+        right: 15px;
+        font-size: 32px;
+        color: #91b4ff;
+    }
 
-        .exercise-list div {
-            background: #1e222b;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+    /* Pop animation for reps */
+    .pop {
+        transform: scale(1.25);
+    }
 
-        .exercise-list div:hover {
-            background: #2b7de9;
-        }
+    /* SIDEBAR */
+    #sidebar {
+        flex: 1;
+        background: #13161d;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        box-shadow: -4px 0 10px rgba(0,0,0,0.4);
+    }
 
-        /* Counter Styling */
-        #counterBox {
-            background: #1e222b;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
+    h2, h3 { margin-top: 0; }
 
-        #counter {
-            font-size: 60px;
-            font-weight: bold;
-            color: #2b7de9;
-        }
+    .section { margin-bottom: 30px; }
 
-        button {
-            margin-top: 10px;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #2b7de9;
-            color: white;
-        }
+    .exercise-list div {
+        background: #1e222b;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
 
-        button:hover {
-            background: #1d5fc7;
-        }
+    .exercise-list div:hover { background: #2b7de9; }
 
-        /* Rest Timer */
-        #restTimerBox {
-            background: #1e222b;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 40px;
-            color: #2b7de9;
-        }
-
-        /* Metrics placeholder */
-        #chartBox {
-            height: 160px;
-            background: #1e222b;
-            border-radius: 10px;
-            margin-top: 10px;
-        }
-    </style>
+    .selected { background: #2b7de9 !important; }
+</style>
 </head>
 
 <body>
 
-<!-- LEFT SIDE CAMERA -->
 <div id="cameraSection">
-    <img src="/video_feed" width="720" height="480">
+    <div id="cameraWrapper">
+        <img id="cameraFeed" src="/video_feed">
+        <div id="overlayCounter">0</div>
+        <div id="overlayRest">Rest: Not Started</div>
+    </div>
 </div>
-<!-- RIGHT SIDE SIDEBAR -->
+
 <div id="sidebar">
 
     <div class="section">
@@ -135,7 +127,7 @@
         <div>Push Ups (3×10)</div>
         <div>Squats (3×12)</div>
         <div>Rows (3×10)</div>
-        <div style="background:#2b7de9;">Bicep Curls (3×10)</div>
+        <div class="selected">Bicep Curls (3×10)</div>
     </div>
 
     <div class="section">
@@ -143,100 +135,46 @@
         <p id="currentExercise">Bicep Curl</p>
     </div>
 
-
-    <!-- Live Counter -->
-    <div class="section">
-        <h3>Live Counter</h3>
-        <div id="counterBox">
-            <div id="counter">{{ number }}</div>
-        </div>
-    </div>
-
-    <!-- REST TIMER -->
-    <div class="section">
-        <h3>Rest Timer</h3>
-        <div id="restTimerBox">Not Started</div>
-    </div>
-
-    <div class="section">
-        <h3>Metrics</h3>
-        <div id="chartBox"></div>
-        <!-- Adding more content to demonstrate scrolling -->
-        <p>Some extra content...</p>
-        <div id="chartBox" style="margin-top:20px; height: 200px"></div>
-        <p>More content to ensure the panel overflows and becomes scrollable.</p>
-        <div id="chartBox" style="margin-top:20px; height: 150px"></div>
-    </div>
-
 </div>
 
 <script>
-/* SOCKET.IO CONNECTION */
 const socket = io("http://localhost:5000");
 
-/* MQTT LIVE COUNTER UPDATES */
+/* Rep counter with pop animation */
 socket.on("counter", value => {
-    document.getElementById("counter").textContent = value;
+    const counterEl = document.getElementById("overlayCounter");
+    if (counterEl.textContent != value) {
+        counterEl.textContent = value;
+        counterEl.classList.add("pop");
+        setTimeout(() => counterEl.classList.remove("pop"), 250);
+    }
 });
 
-/* SOCKET.IO: update exercise text */
+/* Update current exercise text */
 socket.on("type", newText => {
-    const exerciseElem = document.getElementById("currentExercise");
-    exerciseElem.textContent = newText;
+    document.getElementById("currentExercise").textContent = newText;
 });
 
-
-/* -- MODIFIED: CLIENT-SIDE REST TIMER LOGIC WITH SOUND -- */
-
-// Keep track of the timer interval so we can stop it
+/* Rest timer */
 let restInterval = null;
-
-// --- ADDED: Sound Generation ---
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-function playSound() {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.5);
-}
-
-
-// Listen for the event from the server to start the timer
 socket.on("start_rest_timer_client", data => {
-    const restTimerDisplay = document.getElementById("restTimerBox");
+    const restBox = document.getElementById("overlayRest");
     let remaining = data.duration;
 
-    if (restInterval) {
-        clearInterval(restInterval);
-    }
-    
-    restTimerDisplay.textContent = remaining + "s";
+    if (restInterval) clearInterval(restInterval);
+
+    restBox.textContent = `Rest: ${remaining}s`;
 
     restInterval = setInterval(() => {
         remaining--;
-        restTimerDisplay.textContent = remaining + "s";
+        restBox.textContent = `Rest: ${remaining}s`;
 
         if (remaining <= 0) {
             clearInterval(restInterval);
-            restTimerDisplay.textContent = "Rest Finished!";
-            playSound();
+            restBox.textContent = "Rest Finished!";
         }
     }, 1000);
 });
-
-
-
-
-
 </script>
 
 </body>
