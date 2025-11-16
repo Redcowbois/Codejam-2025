@@ -71,6 +71,7 @@ def mqtt_message():
     socketio.emit("counter", counter)
     return {"status": "ok"}
 
+# endpoint call for 
 # publish mqtt message 
 @app.route("/publish", methods=["POST"])
 def publish_message():

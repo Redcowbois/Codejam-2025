@@ -2,6 +2,7 @@ import time
 import threading
 import paho.mqtt.client as mqtt
 import requests
+import shared_state
 
 BROKER = "localhost"
 PORT = 1883
@@ -37,6 +38,13 @@ class MQTTWorker:
                 requests.post("http://127.0.0.1:5000/start_rest?seconds=10", json={"msg": payload})
             except Exception as e:
                 print("Failed to call Flask:", e)
+        elif payload == "START":
+            print("test")
+            shared_state.flag = 1
+        elif payload == "END":
+            print("end test")
+            shared_state.flag = 0
+
         else:
             # print("Invalid message: " + payload)
             pass
