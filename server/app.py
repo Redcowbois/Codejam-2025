@@ -20,7 +20,7 @@ socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 counter = 0
 BROKER_HOST = "10.74.242.184"  
 BROKER_PORT = 1883
-MQTT_TOPIC_ENCOURAGEMENT = "encouragement"
+MQTT_TOPIC_ENCOURAGEMENT = "dac"
 mqtt_client = mqtt.Client()
 mqtt_client.connect(BROKER_HOST, BROKER_PORT)
 mqtt_client.loop_start() 

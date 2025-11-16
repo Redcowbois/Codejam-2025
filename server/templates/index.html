@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Workout Tracker</title>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<link rel="stylesheet" href="path/to/stylesheet.css">
+    <meta charset="UTF-8" />
+    <title>Workout Tracker</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 
 <body>
@@ -12,7 +12,7 @@
 <div id="cameraSection">
     <div id="cameraWrapper">
         <img id="cameraFeed" src="/video_feed">
-        <div id="overlayCounter">0</div>
+        <div id="overlayCounter">Reps: 0</div>
         <div id="overlayRest">Rest: Not Started</div>
     </div>
 </div>
@@ -45,13 +45,14 @@ const socket = io("http://localhost:5000");
 /* Rep counter with pop animation */
 socket.on("counter", value => {
     const counterEl = document.getElementById("overlayCounter");
+    const encouragement_rep_counts = [3,8,9]
     if (counterEl.textContent != value) {
-        counterEl.textContent = value;
+        counterEl.textContent = "Reps: " + value;
         counterEl.classList.add("pop");
         setTimeout(() => counterEl.classList.remove("pop"), 250);
     }
-
-    if (value === 3) {
+    
+    if (encouragement_rep_counts.includes(value)) {
         fetch("/encourage", { 
             method: "POST",
             headers: {
