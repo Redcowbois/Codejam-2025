@@ -57,8 +57,8 @@ body {
 #overlayRest {
     position: absolute;
     top: 115px;
-    left: 15px;     /* aligned under the rep counter */
-    font-size: 32px;
+    left: 23px;     /* aligned under the rep counter */
+    font-size: 30px;
     color: #ffffff;
     background: none;        /* REMOVE BACKGROUND */
     backdrop-filter: none;   /* REMOVE BLUR */
@@ -84,13 +84,13 @@ body {
 }
 
 #titleBox {
-    background: #5e8df5; 
+    background: #457ffb; 
     padding: 18px 20px;
     border-radius: 14px;
     margin-top: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     border: 1px solid rgba(255,255,255,0.05);
-}
+}   
 
 /* Style the title itself */
 #titleBox h2 {
@@ -103,7 +103,13 @@ body {
 
 
 
-h2, h3 { margin-top: 0; }
+h2, h3 { 
+    margin-top: 0; 
+}
+
+#sidebar h3 {
+    font-size: 25px;
+}
 
 h1 {
     font-size: 40px;   /* adjust as needed */
@@ -111,6 +117,11 @@ h1 {
 }
 
 .section { margin-bottom: 0px; }
+
+#exerciseListBox.tight-gap {
+    margin-top: 0px;  /* tighter spacing for this specific box */
+}
+
 
 .exercise-list div {
     background: #1e222b;
@@ -131,7 +142,7 @@ h1 {
     background: #1e222b;
     padding: 20px;
     border-radius: 14px;
-    margin-top: 20px;
+    margin-top: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     border: 1px solid rgba(255,255,255,0.05);
 }
@@ -140,7 +151,7 @@ h1 {
 #currentExerciseBox h3,
 #exerciseListBox h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: 25px;
     color: #91b4ff;
 }
 
@@ -171,12 +182,9 @@ h1 {
     border: 1px solid rgba(255,255,255,0.05);
 }
 
-.exercise:hover {
-    background: #2b7de9;
-}
-
 .exercise-name {
     font-weight: 600;
+    font-size: 20px;
     margin-bottom: 8px;
     color: #ffffff;
 }
