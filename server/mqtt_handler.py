@@ -36,10 +36,12 @@ class MQTTWorker:
         elif payload == "START":
             print("test")
             shared_state.flag = 1
+            shared_state.cur_exercise_flag = 1
             requests.post("http://127.0.0.1:5000/stop_rest", json={"msg": payload})
         elif payload == "END":
             print("end test")
             shared_state.flag = 0
+            shared_state.cur_exercise_flag = 0
             try:
                 requests.post("http://127.0.0.1:5000/reset")
             except Exception as e:

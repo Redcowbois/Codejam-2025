@@ -332,9 +332,16 @@ def opencv_run(socketio_backend):
             current_split = current_prediction.split(" ")
             last_split = last_prediction.split(" ")
             if current_split[0] != last_split[0]:
-                print("MEOWW IN IF " + current_prediction)
+                # print("MEOWW IN IF " + current_prediction)
                 if (current_split[0] != "IDLE"):
                     index = current_prediction.find("(")
+                    if shared_state.cur_exercise_flag == 1:
+                        s = current_prediction.split(":")
+                        s = s[0].lower()
+                        s = s.title()
+
+                        socketio_backend.emit("update_cur_exercise", s)
+                        shared_state.cur_exercise_flag == 0
 
                     # If "(" exists, cut off everything from it (including)
                     if index != -1:
