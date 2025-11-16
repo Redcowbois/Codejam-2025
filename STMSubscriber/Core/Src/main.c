@@ -128,9 +128,9 @@ int main(void)
   hwifi.port = 1883;
 
   // MQTT stuff
-  sprintf(hwifi.mqtt.subscribeTopic, "#");
+  sprintf(hwifi.mqtt.subscribeTopic, "dac");
   sprintf(hwifi.mqtt.id, "dacdacdacdacdacdacdacda");
-  sprintf(hwifi.remoteIpAddress, "10.74.242.116");
+  sprintf(hwifi.remoteIpAddress, "10.74.242.184");
 
   WIFI_Init(&hwifi);
   WIFI_JoinNetwork(&hwifi);

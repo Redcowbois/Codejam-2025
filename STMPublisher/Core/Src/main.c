@@ -153,7 +153,7 @@ void Accel_ReadAndUpdateReps(void)
 
         char buf[64];
         snprintf(buf, sizeof(buf), "Rep count: %ld", (long)rep_count);   // no \r\n needed for MQTT
-        WIFI_MQTTPublish(&hwifi, "+1", 3);
+        WIFI_MQTTPublish(&hwifi, "inc", 4);
 
       }
       break;
@@ -229,7 +229,7 @@ int main(void)
   hwifi.transportProtocol = WIFI_TCP_PROTOCOL;
   hwifi.port = 1883;
   sprintf(hwifi.mqtt.publishTopic, "test");
-	sprintf(hwifi.remoteIpAddress, "10.74.242.116");
+	sprintf(hwifi.remoteIpAddress, "10.74.242.184");
 
 	WIFI_Init(&hwifi);
 	WIFI_JoinNetwork(&hwifi);
