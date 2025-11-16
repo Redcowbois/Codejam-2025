@@ -54,7 +54,7 @@ const socket = io("http://localhost:5000");
 /* Rep counter with pop animation */
 socket.on("counter", value => {
     const counterEl = document.getElementById("overlayCounter");
-    const encouragement_rep_counts = [3,8,9]
+    const encouragement_rep_counts = [6,7]
     if (counterEl.textContent != value) {
         counterEl.textContent = "Reps: " + value;
         counterEl.classList.add("pop");
@@ -76,7 +76,7 @@ socket.on("counter", value => {
         .catch(err => console.error("API error:", err));
     }
 
-    if (value === 5) {
+    if (value === 8) {
         decreaseCurrentExerciseSet();
     }
 });
@@ -85,6 +85,25 @@ socket.on("counter", value => {
 socket.on("type", newText => {
     document.getElementById("currentExercise").textContent = newText;
 });
+
+
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound() {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'sine'; // A simple, clean tone
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime); // Frequency in hertz (Hz)
+    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Set volume
+
+    oscillator.start();
+    // Stop the sound after 0.5 seconds
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
 
 /* Rest timer */
 let restInterval = null;
@@ -102,6 +121,7 @@ socket.on("start_rest_timer_client", data => {
 
         if (remaining <= 0) {
             clearInterval(restInterval);
+            playSound();
             restBox.textContent = "Rest Finished!";
         }
     }, 1000);
