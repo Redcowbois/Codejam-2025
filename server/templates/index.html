@@ -21,7 +21,7 @@
 <div id="sidebar">
     <div class="section">
         <h1>Sunday Workout Plan</12>
-        <div id="titleBox"> <h2>Current Exercise: Lateral Raises</h2> </div>
+        <div id="titleBox"> <h2>Current Exercise: None</h2> </div>
     </div>
 
 <!-- EXERCISE LIST BOX -->
@@ -29,13 +29,13 @@
         <h3>Exercises</h3>
 
         <div class="exercise" data-total-sets="3" data-remaining-sets="3">
-            <span class="exercise-name">Lateral Raises</span>
+            <span class="exercise-name">Lateral Raise</span>
             <div class="sets-bar"></div>
             <span class="sets-text">Sets left: 3/3</span>
         </div>
 
         <div class="exercise" data-total-sets="3" data-remaining-sets="3">
-            <span class="exercise-name">Bicep Curls</span>
+            <span class="exercise-name">Bicep Curl</span>
             <div class="sets-bar"></div>
             <span class="sets-text">Sets left: 3/3</span>
         </div>
@@ -44,7 +44,7 @@
     <!-- CURRENT EXERCISE BOX -->
     <div id="currentExerciseBox">
         <h3>Form Feedback</h3>
-        <p id="currentExercise">Bicep Curl</p>
+        <p id="currentExercise">None</p>
     </div>
 </div>
 
@@ -113,6 +113,13 @@ socket.on("stop_rest_timer_client", () => {
     if (restInterval) clearInterval(restInterval);
 });
 
+
+socket.on("update_cur_exercise", (data) => {
+    const titleH2 = document.querySelector("#titleBox h2");
+    if (titleH2) {
+        titleH2.textContent = "Current Exercise: " + data;
+    }
+});
 
 function initExerciseSegments() {
     const exercises = document.querySelectorAll(".exercise");

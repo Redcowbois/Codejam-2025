@@ -157,10 +157,13 @@ h1 {
 
 /* Current exercise text */
 #currentExercise {
-    font-size: 26px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 550;
     color: #ffffff;
     margin-top: 10px;
+    white-space: normal;       /* allows text to wrap */
+    word-wrap: break-word;     /* breaks long words if needed */
+    overflow-wrap: break-word;
 }
 
 /* Exercise list container spacing */
